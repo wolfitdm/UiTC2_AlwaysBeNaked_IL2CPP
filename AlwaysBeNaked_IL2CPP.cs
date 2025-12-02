@@ -5,6 +5,7 @@ using BepInEx.Unity.IL2CPP.Hook;
 using BepInEx.Unity.IL2CPP.Utils.Collections;
 using HarmonyLib;
 using Il2CppInterop.Runtime;
+using Il2CppInterop.Runtime.Runtime;
 using Microsoft.VisualBasic;
 using MonoMod.RuntimeDetour;
 using System;
@@ -27,6 +28,11 @@ namespace AlwaysBeNaked_IL2CPP
         public static Type MyGetType(string originalClassName)
         {
             return Type.GetType(originalClassName + ",Assembly-CSharp");
+        }
+
+        public static IntPtr MyGetTypeIL2CPP(string originalClassName)
+        {
+            return IL2CPP.GetIl2CppClass("Assembly-CSharp.dll", "", originalClassName);
         }
 
 
@@ -519,6 +525,8 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.ToString());
+                Logger.LogInfo(e.ToString());
             }
 
             try
@@ -527,6 +535,8 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.ToString());
+                Logger.LogInfo(e.ToString());
             }
 
             try
@@ -535,6 +545,8 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.ToString());
+                Logger.LogInfo(e.ToString());
             }
 
             try
@@ -543,6 +555,8 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.ToString());
+                Logger.LogInfo(e.ToString());
             }
 
             try
@@ -551,6 +565,8 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.ToString());
+                Logger.LogInfo(e.ToString());
             }
 
             try
@@ -559,6 +575,8 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.ToString());
+                Logger.LogInfo(e.ToString());
             }
         }
 
@@ -732,7 +750,7 @@ namespace AlwaysBeNaked_IL2CPP
             UW_setVar(obj, className, field, flags, value);
         }
 
-        static void UW_setVar(object obj, string className, string field, BindingFlags flags, object value)
+        static void UW_setVar(object obj, string className, string field, BindingFlags flags, object value, bool outputException = true)
         {
             Type myType1 = MyGetType(className);
             if (myType1 == null)
@@ -757,9 +775,59 @@ namespace AlwaysBeNaked_IL2CPP
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.ToString());
-                Logger.LogInfo(e.ToString());
+                if (outputException)
+                {
+                    Console.WriteLine(e.ToString());
+                    Logger.LogInfo(e.ToString());
+                } else
+                {
+                    throw e;
+                }
             }
+        }
+
+        static unsafe void UW_setStaticVarILCPP(string className, string field, object value)
+        {
+            IntPtr intPtr = MyGetTypeIL2CPP(className);
+            if (intPtr == IntPtr.Zero)
+            {
+                throw new Exception("class " + className + " not found, the dev have removed it!");
+            }
+            IL2CPP.il2cpp_runtime_class_init(intPtr);
+            IntPtr fieldPtr = IL2CPP.GetIl2CppField(intPtr, field);
+            if (fieldPtr == IntPtr.Zero)
+            {
+                throw new Exception("field " + field + " not found, the dev have removed it!");
+            }
+            IL2CPP.il2cpp_field_static_set_value(fieldPtr, (void*)&value);
+        }
+
+        static unsafe object UW_getStaticVarILCPP(string className, string field)
+        {
+            IntPtr intPtr = MyGetTypeIL2CPP(className);
+            if (intPtr == IntPtr.Zero)
+            {
+                throw new Exception("class " + className + " not found, the dev have removed it!");
+            }
+            IL2CPP.il2cpp_runtime_class_init(intPtr);
+            IntPtr fieldPtr = IL2CPP.GetIl2CppField(intPtr, field);
+            if (fieldPtr == IntPtr.Zero)
+            {
+                throw new Exception("field " + field + " not found, the dev have removed it!");
+            }
+            object value;
+            IL2CPP.il2cpp_field_static_get_value(fieldPtr, (void*)&value);
+            return value;
+        }
+
+        static void UW_setStaticVar(string className, string field, object value)
+        {
+            UW_setVar(null, className, field, BindingFlags.Static | BindingFlags.Public, value, false);
+        }
+
+        static object UW_getStaticVar(string className, string field)
+        {
+            return UW_getVar(null, className, field, BindingFlags.Static | BindingFlags.Public);
         }
 
         static void UW_setProperty(object obj, string className, string field, BindingFlags flags, object value)
@@ -857,17 +925,62 @@ namespace AlwaysBeNaked_IL2CPP
         static void GlobalObjects_UW_setVar(string field, object value)
         {
             string className = "GlobalObjects_UW";
-            BindingFlags flags = BindingFlags.Public | BindingFlags.Static;
-            object obj = null;
-            UW_setVar(obj, className, field, flags, value);
+            Exception e1 = null;
+            Exception e2 = null;
+
+            try
+            {
+                UW_setStaticVar(className, field, value);
+            }
+            catch (Exception e)
+            {
+                e1 = e;
+            }
+
+            try
+            {
+                UW_setStaticVarILCPP(className, field, value);
+            }
+            catch (Exception e)
+            {
+                e2 = e;
+            }
+
+            if (e1 != null && e2 != null)
+            {
+                throw e1;
+            }
         }
 
         static object GlobalObjects_UW_getVar(string field)
         {
             string className = "GlobalObjects_UW";
-            BindingFlags flags = BindingFlags.Public | BindingFlags.Static;
-            object obj = null;
-            return UW_getVar(obj, className, field, flags);
+            object ret = null;
+            object ret2 = null;
+            try
+            {
+                ret = UW_getStaticVar(className, field);
+            }
+            catch (Exception e)
+            {
+                ret = null;
+            }
+
+            try
+            {
+                ret2 = UW_getStaticVarILCPP(className, field);
+            }
+            catch (Exception e)
+            {
+                ret2 = null;
+            }
+
+            if (ret2 != null)
+            {
+                return ret2;
+            }
+
+            return ret;
         }
 
         static void GlobalObjects_UW_setVarEnum(string field, string enumvalue)

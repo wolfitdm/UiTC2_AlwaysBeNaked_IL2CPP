@@ -143,3 +143,4 @@ C:\Users\CdemyTeilnehmer\Downloads\UiTC_NEW\Demo_UiTC2_2025_04_Win\AlwaysBeNaked
 C:\Users\CdemyTeilnehmer\Downloads\UiTC_NEW\Demo_UiTC2_2025_04_Win\AlwaysBeNaked_IL2CPP\obj\Release\net6.0\refint\AlwaysBeNaked_IL2CPP.dll
 C:\Users\CdemyTeilnehmer\Downloads\UiTC_NEW\Demo_UiTC2_2025_04_Win\AlwaysBeNaked_IL2CPP\obj\Release\net6.0\AlwaysBeNaked_IL2CPP.pdb
 C:\Users\CdemyTeilnehmer\Downloads\UiTC_NEW\Demo_UiTC2_2025_04_Win\AlwaysBeNaked_IL2CPP\obj\Release\net6.0\ref\AlwaysBeNaked_IL2CPP.dll
+C:\Users\CdemyTeilnehmer\Downloads\UiTC_NEW\Demo_UiTC2_2025_04_Win\AlwaysBeNaked_IL2CPP\obj\Release\net6.0\AlwaysBeNaked_IL2CPP.sourcelink.json
